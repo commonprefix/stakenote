@@ -1,0 +1,17 @@
+[package]
+name = "stakenote_implementation"
+edition = "2024"
+
+[dependencies]
+curve25519-dalek = { version = "4", features = ["rand_core", "digest"] }
+rand = "0.8"
+sha2 = "0.10"
+vrf-r255 = "0.1"
+rand_core = "0.6"
+hex = "0.4"
+subtle = "2"
+rug = "1.22"
+bulletproofs = "5"
+merlin = "3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
