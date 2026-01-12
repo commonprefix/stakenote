@@ -12,7 +12,7 @@ use crate::library::structs::{Output,OutputPublic,BlockMsg,ClsagSig,Block,VRFKey
 use crate::library::constants::{RING_SIZE,TOTAL_STAKE,DECOY_AMOUNT,EPOCH_NONCE,BLOCK_PAYLOAD,EPOCH_NUMBER};
 use crate::library::helpers::ctoption_to_result;
 
-pub fn execute(v_o:u64) -> Result<(Block, Duration, Duration, Duration, Duration, Duration, Duration), Box<dyn std::error::Error>> {
+pub fn execute(v_o:u64) -> Result<(Block, Vec<Duration>), Box<dyn std::error::Error>> {
     let out:Output = create_output(v_o);
     let sk_bytes:[u8; 32] = out.secret.sk_pay.to_bytes();
     let key_image:RistrettoPoint = key_image_from_sk(&out.secret.sk_pay, &out.public.vk_pay);
@@ -31,27 +31,24 @@ pub fn execute(v_o:u64) -> Result<(Block, Duration, Duration, Duration, Duration
 
     let epoch_nonce = EPOCH_NONCE;
     let block:Block;
-    let duration_t_calculation:Duration;
-    let duration_bulletproof:Duration;
-    let duration_clsag:Duration;
-    let duration_vrf_verify:Duration;
-    let duration_bulletproof_verify:Duration;
-    let duration_clsag_verify:Duration;
+    let mut durations = vec![Duration::ZERO; 7];
 
     let mut slot_number = 0;
     loop {
         slot_number += 1;
         let msg = create_vrf_message(epoch_nonce, slot_number);
+        let mut now = Instant::now();
         let (hex_vrf_output, vrf_proof) = compute_vrf(sk, &msg)?;
+        durations[0] = now.elapsed();
 
         let sigma = sigma_from_amount(v_o, TOTAL_STAKE);
         let (eligible, sigma_min) = is_eligible(&hex_vrf_output, &sigma);
         if eligible {
-            let mut now = Instant::now();
+            now = Instant::now();
 
             let t_val:u64 = amount_from_sigma(&sigma_min, TOTAL_STAKE);
 
-            duration_t_calculation = now.elapsed();
+            durations[1] = now.elapsed();
 
             now = Instant::now();
 
@@ -61,7 +58,7 @@ pub fn execute(v_o:u64) -> Result<(Block, Duration, Duration, Duration, Duration
             let bulletproof = create_bulletproof(t_val_commitment, val_t_diff, ro)?;
             let hex_proof:String = bulletproof_to_hex(&bulletproof);
 
-            duration_bulletproof = now.elapsed();
+            durations[2] = now.elapsed();
 
             now = Instant::now();
 
@@ -81,7 +78,7 @@ pub fn execute(v_o:u64) -> Result<(Block, Duration, Duration, Duration, Duration
 
             let sig:ClsagSig = clsag_sign(&m, &ring, &out, ro)?;
 
-            duration_clsag = now.elapsed();
+            durations[3] = now.elapsed();
 
             block = Block { msg: m, sig: sig, ring: ring };
 
@@ -93,25 +90,25 @@ pub fn execute(v_o:u64) -> Result<(Block, Duration, Duration, Duration, Duration
             let beta_hex = hex::encode(&beta);
             println!("VRF verification: {}", beta_hex==hex_vrf_output);
 
-            duration_vrf_verify = now.elapsed();
+            durations[4] = now.elapsed();
 
             now = Instant::now();
 
             verify_bulletproof(&block.msg.range_proof,&block.sig.c_diff)?;
             println!("Range proof verified!");
 
-            duration_bulletproof_verify = now.elapsed();
+            durations[5] = now.elapsed();
 
             now = Instant::now();
 
             let sig_verification = clsag_verify(&block.msg, &block.ring, &block.sig);
             println!("CLSAG verify = {sig_verification}");
 
-            duration_clsag_verify = now.elapsed();
+            durations[6] = now.elapsed();
 
             break;
         }
     }
 
-    Ok((block, duration_t_calculation, duration_bulletproof, duration_clsag, duration_vrf_verify, duration_bulletproof_verify, duration_clsag_verify))
+    Ok((block, durations))
 }
