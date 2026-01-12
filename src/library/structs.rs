@@ -21,10 +21,10 @@ pub struct ClsagSig {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ClsagSigJson {
-    pub c_diff_hex: String,
-    pub c0_hex: String,
-    pub s_x_hex: Vec<String>,
-    pub s_r_hex: Vec<String>,
+    pub diff_commitment: String,
+    pub c0: String,
+    pub s_x: Vec<String>,
+    pub s_r: Vec<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -42,8 +42,8 @@ pub struct OutputPublic {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OutputPubJson {
-    pub vk_pay_hex: String,
-    pub c_stake_hex: String,
+    pub pubkey: String,
+    pub stake_commitment: String,
 }
 
 #[derive(Clone, Debug)]
@@ -67,14 +67,14 @@ pub struct BlockMsg {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BlockMsgJson {
-    pub payload_b_hex: String,
+    pub payload: String,
     pub epoch: u64,
     pub slot: u64,
-    pub vk_vrf_o_hex: String,
-    pub y_o_hex: String,
-    pub pi_y_hex: String,
+    pub vrf_pubkey: String,
+    pub vrf_output: String,
+    pub vrf_proof: String,
     pub t: u64,
-    pub key_image_hex: String,
+    pub key_image: String,
     pub range_proof: String,
 }
 
@@ -98,14 +98,14 @@ pub struct Block {
 impl From<&BlockMsg> for BlockMsgJson {
     fn from(m: &BlockMsg) -> Self {
         Self {
-            payload_b_hex: bytes_to_hex(&m.payload_b),
+            payload: bytes_to_hex(&m.payload_b),
             epoch: m.epoch,
             slot: m.slot,
-            vk_vrf_o_hex: point_to_hex(&m.vk_vrf_o),
-            y_o_hex: m.y_o.clone(),
-            pi_y_hex: bytes_to_hex(&m.pi_y),
+            vrf_pubkey: point_to_hex(&m.vk_vrf_o),
+            vrf_output: m.y_o.clone(),
+            vrf_proof: bytes_to_hex(&m.pi_y),
             t: m.t,
-            key_image_hex: point_to_hex(&m.key_image),
+            key_image: point_to_hex(&m.key_image),
             range_proof: m.range_proof.clone(),
         }
     }
@@ -116,14 +116,14 @@ impl TryFrom<BlockMsgJson> for BlockMsg {
 
     fn try_from(j: BlockMsgJson) -> Result<Self, Self::Error> {
         Ok(Self {
-            payload_b: hex_to_bytes(&j.payload_b_hex)?,
+            payload_b: hex_to_bytes(&j.payload)?,
             epoch: j.epoch,
             slot: j.slot,
-            vk_vrf_o: hex_to_point(&j.vk_vrf_o_hex)?,
-            y_o: j.y_o_hex,
-            pi_y: hex_to_bytes(&j.pi_y_hex)?,
+            vk_vrf_o: hex_to_point(&j.vrf_pubkey)?,
+            y_o: j.vrf_output,
+            pi_y: hex_to_bytes(&j.vrf_proof)?,
             t: j.t,
-            key_image: hex_to_point(&j.key_image_hex)?,
+            key_image: hex_to_point(&j.key_image)?,
             range_proof: j.range_proof,
         })
     }
@@ -132,10 +132,10 @@ impl TryFrom<BlockMsgJson> for BlockMsg {
 impl From<&ClsagSig> for ClsagSigJson {
     fn from(s: &ClsagSig) -> Self {
         Self {
-            c_diff_hex: point_to_hex(&s.c_diff),
-            c0_hex: scalar_to_hex(&s.c0),
-            s_x_hex: s.s_x.iter().map(scalar_to_hex).collect(),
-            s_r_hex: s.s_r.iter().map(scalar_to_hex).collect(),
+            diff_commitment: point_to_hex(&s.c_diff),
+            c0: scalar_to_hex(&s.c0),
+            s_x: s.s_x.iter().map(scalar_to_hex).collect(),
+            s_r: s.s_r.iter().map(scalar_to_hex).collect(),
         }
     }
 }
@@ -144,12 +144,12 @@ impl TryFrom<ClsagSigJson> for ClsagSig {
     type Error = String;
 
     fn try_from(j: ClsagSigJson) -> Result<Self, Self::Error> {
-        let s_x = j.s_x_hex.into_iter().map(|h| hex_to_scalar(&h)).collect::<Result<Vec<_>, _>>()?;
-        let s_r = j.s_r_hex.into_iter().map(|h| hex_to_scalar(&h)).collect::<Result<Vec<_>, _>>()?;
+        let s_x = j.s_x.into_iter().map(|h| hex_to_scalar(&h)).collect::<Result<Vec<_>, _>>()?;
+        let s_r = j.s_r.into_iter().map(|h| hex_to_scalar(&h)).collect::<Result<Vec<_>, _>>()?;
 
         Ok(Self {
-            c_diff: hex_to_point(&j.c_diff_hex)?,
-            c0: hex_to_scalar(&j.c0_hex)?,
+            c_diff: hex_to_point(&j.diff_commitment)?,
+            c0: hex_to_scalar(&j.c0)?,
             s_x,
             s_r,
         })
@@ -159,8 +159,8 @@ impl TryFrom<ClsagSigJson> for ClsagSig {
 impl From<&OutputPublic> for OutputPubJson {
     fn from(o: &OutputPublic) -> Self {
         Self {
-            vk_pay_hex: point_to_hex(&o.vk_pay),
-            c_stake_hex: point_to_hex(&o.commitment),
+            pubkey: point_to_hex(&o.vk_pay),
+            stake_commitment: point_to_hex(&o.commitment),
         }
     }
 }
@@ -170,8 +170,8 @@ impl TryFrom<OutputPubJson> for OutputPublic {
 
     fn try_from(j: OutputPubJson) -> Result<Self, Self::Error> {
         Ok(Self {
-            vk_pay: hex_to_point(&j.vk_pay_hex)?,
-            commitment: hex_to_point(&j.c_stake_hex)?,
+            vk_pay: hex_to_point(&j.pubkey)?,
+            commitment: hex_to_point(&j.stake_commitment)?,
         })
     }
 }
