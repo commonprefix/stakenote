@@ -2,7 +2,7 @@ use curve25519_dalek::scalar::Scalar;
 use curve25519_dalek::ristretto::RistrettoPoint;
 use vrf_r255::{PublicKey,SecretKey,Proof};
 
-use crate::library::helpers::{ctoption_to_result};
+use crate::library::helpers::ctoption_to_result;
 use crate::library::output::setup_generators;
 use crate::library::structs::{VRFKey};
 
@@ -29,6 +29,22 @@ pub fn create_vrf_keypair_from_hex(sk_hex: &str) -> Result<VRFKey, String> {
 pub fn vk_point_from_scalar(sk: Scalar) -> RistrettoPoint {
     let (_, _, _, gvrf) = setup_generators();
     sk * gvrf
+}
+
+pub fn vrf_pubkey_from_point(pubkey: &RistrettoPoint) -> PublicKey {
+    let bytes: [u8; 32] = pubkey.compress().to_bytes();
+    let pk = PublicKey::from_bytes(bytes).expect("VRF generation failed");
+    pk
+}
+
+pub fn proof_from_vec(bytes: Vec<u8>) -> Option<Proof> {
+    let arr: [u8; 80] = bytes.as_slice().try_into().ok()?;
+    Proof::from_bytes(arr)
+}
+
+pub fn proof_from_slice(bytes: &[u8]) -> Option<Proof> {
+    let arr: [u8; 80] = bytes.try_into().ok()?;
+    Proof::from_bytes(arr)
 }
 
 pub fn create_vrf_message(prefix: &str, n: u64) -> Vec<u8> {

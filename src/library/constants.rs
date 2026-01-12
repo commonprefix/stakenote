@@ -6,7 +6,6 @@ pub const GPAY_LABEL:&str = "StakeNote/GPAY";
 // CONSENSUS
 pub const EPOCH_NONCE:&str = "nonce";
 pub const EPOCH_NUMBER:u64 = 7;
-pub const SLOT_NUMBER:u64 = 12345;
 pub const BLOCK_PAYLOAD:&[u8; 18] = b"block-header-bytes";
 
 // RANGE PROOF

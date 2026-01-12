@@ -25,8 +25,9 @@ fn serialize_m(m: &BlockMsg) -> Vec<u8> {
     out.extend_from_slice(&m.epoch.to_le_bytes());
     out.extend_from_slice(&m.slot.to_le_bytes());
     out.extend_from_slice(m.vk_vrf_o.compress().as_bytes());
-    out.extend_from_slice(&(m.y_o.len() as u64).to_le_bytes());
-    out.extend_from_slice(&m.y_o);
+    // out.extend_from_slice(&(m.y_o.len() as u64).to_le_bytes());
+    // out.extend_from_slice(&m.y_o);
+    out.extend_from_slice(&m.y_o.clone().into_bytes());
     out.extend_from_slice(&(m.pi_y.len() as u64).to_le_bytes());
     out.extend_from_slice(&m.pi_y);
     out.extend_from_slice(&m.t.to_le_bytes());
