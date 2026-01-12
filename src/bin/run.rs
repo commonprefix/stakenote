@@ -11,7 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pct_bp:u32 = 3000; // 30%
     let v_o = amount_from_basis_points(TOTAL_STAKE, pct_bp);
     let block:Block;
-    (block, _, _, _, _, _) = execute(v_o).expect("Execution failed");
+    (block, _, _, _, _, _, _) = execute(v_o).expect("Execution failed");
     write_block_json("block.json", &block)?;
 
     // --- VERIFY ---

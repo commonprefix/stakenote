@@ -12,7 +12,7 @@ use crate::library::structs::{Output,OutputPublic,BlockMsg,ClsagSig,Block,VRFKey
 use crate::library::constants::{RING_SIZE,TOTAL_STAKE,DECOY_AMOUNT,EPOCH_NONCE,BLOCK_PAYLOAD,EPOCH_NUMBER};
 use crate::library::helpers::ctoption_to_result;
 
-pub fn execute(v_o:u64) -> Result<(Block, Duration, Duration, Duration, Duration, Duration), Box<dyn std::error::Error>> {
+pub fn execute(v_o:u64) -> Result<(Block, Duration, Duration, Duration, Duration, Duration, Duration), Box<dyn std::error::Error>> {
     let out:Output = create_output(v_o);
     let sk_bytes:[u8; 32] = out.secret.sk_pay.to_bytes();
     let key_image:RistrettoPoint = key_image_from_sk(&out.secret.sk_pay, &out.public.vk_pay);
@@ -34,6 +34,7 @@ pub fn execute(v_o:u64) -> Result<(Block, Duration, Duration, Duration, Duration
     let duration_t_calculation:Duration;
     let duration_bulletproof:Duration;
     let duration_clsag:Duration;
+    let duration_vrf_verify:Duration;
     let duration_bulletproof_verify:Duration;
     let duration_clsag_verify:Duration;
 
@@ -84,11 +85,15 @@ pub fn execute(v_o:u64) -> Result<(Block, Duration, Duration, Duration, Duration
 
             block = Block { msg: m, sig: sig, ring: ring };
 
+            now = Instant::now();
+
             let vk_pubkey = vrf_pubkey_from_point(&vk_vrf_o);
             let beta_ct = vk_pubkey.verify(&msg, &vrf_proof);
             let beta = ctoption_to_result(beta_ct, "VRF proof did not verify")?;
             let beta_hex = hex::encode(&beta);
             println!("VRF verification: {}", beta_hex==hex_vrf_output);
+
+            duration_vrf_verify = now.elapsed();
 
             now = Instant::now();
 
@@ -108,5 +113,5 @@ pub fn execute(v_o:u64) -> Result<(Block, Duration, Duration, Duration, Duration
         }
     }
 
-    Ok((block, duration_t_calculation, duration_bulletproof, duration_clsag, duration_bulletproof_verify, duration_clsag_verify))
+    Ok((block, duration_t_calculation, duration_bulletproof, duration_clsag, duration_vrf_verify, duration_bulletproof_verify, duration_clsag_verify))
 }
